@@ -14,7 +14,7 @@
 | path to your installation.
 |
 */
-$config['base_url']	= 'http://localhost/Disdus/microsite/boga-survey/';
+$config['base_url']	= 'http://localhost/Disdus/boga/';
 
 /*
 |--------------------------------------------------------------------------
@@ -252,7 +252,7 @@ $config['sess_use_database']	= FALSE;
 $config['sess_table_name']		= 'ci_sessions';
 $config['sess_match_ip']		= FALSE;
 $config['sess_match_useragent']	= TRUE;
-$config['sess_time_to_update']	= 21600;
+$config['sess_time_to_update']	= 300; // changed here as well
 
 /*
 |--------------------------------------------------------------------------
@@ -296,7 +296,7 @@ $config['global_xss_filtering'] = FALSE;
 $config['csrf_protection'] = FALSE;
 $config['csrf_token_name'] = 'csrf_test_name';
 $config['csrf_cookie_name'] = 'csrf_cookie_name';
-$config['csrf_expire'] = 7200;
+$config['csrf_expire'] = 7200;// changed here as well
 
 /*
 |--------------------------------------------------------------------------
@@ -315,7 +315,7 @@ $config['csrf_expire'] = 7200;
 | by the output class.  Do not 'echo' any values with compression enabled.
 |
 */
-$config['compress_output'] = FALSE;
+$config['compress_output'] = FALSE;// changed here as well
 
 /*
 |--------------------------------------------------------------------------
@@ -329,7 +329,7 @@ $config['compress_output'] = FALSE;
 |
 */
 $config['time_reference'] = 'local';
-
+// changed here as well
 
 /*
 |--------------------------------------------------------------------------
@@ -357,6 +357,7 @@ $config['rewrite_short_tags'] = FALSE;
 */
 $config['proxy_ips'] = '';
 
+// Added by msulistijo on 12 April 2013
 
 $config['session_path'] = APPPATH . 'data';
 
