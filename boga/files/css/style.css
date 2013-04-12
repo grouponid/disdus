@@ -1,0 +1,50 @@
+#background{
+  width:953px;
+	margin-left:auto;
+	margin-right:auto;
+	background-color:#edeeee;
+	min-height:700px;
+	position:relative;
+	display:table;
+  //background-image:url('../img/logo-boga.png');
+  //background-repeat:no-repeat;
+  //background-position:center; 
+}
+
+#container{
+  height:auto;
+  min-height:700px;
+}
+
+#header{
+	position:relative;
+	padding-top:10px;
+	height:80px;
+	width:100%;
+	background-color:#FFFFFF;
+}
+
+#survey_title_container{
+	float:left;
+	font-family:'Arial',Georgia,Serif;
+	font-size:20px;
+	padding-top:25px;
+	padding-left:240px;
+	font-weight:bold;
+}
+
+#banner_container{
+	position:relative;
+	left:-33px;
+}
+
+.clear{
+	clear:both;
+}
+
+.question_title{
+	margin:10px 0px 10px;
+	font-weight:bold;
+  font-family:'Arial',Georgia,Serif;
+	font-size:18px;
+}
