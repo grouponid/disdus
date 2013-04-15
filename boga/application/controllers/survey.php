@@ -67,7 +67,7 @@ class Survey extends CI_Controller {
 	
 	public function redeem($voucher_code=0)
 	{
-		$voucher_query = $this->db->get_where('session', array('voucher_code', $voucher_code));
+		$voucher_query = $this->db->get_where('session', array('voucher_code' => $voucher_code));
 		$voucher = $voucher_query->row_array();
 		if(empty($voucher))
 		{
@@ -89,7 +89,7 @@ class Survey extends CI_Controller {
 	
 	public function check_voucher($voucher_code=0)
 	{
-		$voucher_query = $this->db->get_where('session', array('voucher_code', $voucher_code));
+		$voucher_query = $this->db->get_where('session', array('voucher_code' => $voucher_code));
 		$voucher = $voucher_query->row_array();
 		if(empty($voucher))
 		{
