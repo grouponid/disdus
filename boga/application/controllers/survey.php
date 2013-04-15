@@ -67,12 +67,48 @@ class Survey extends CI_Controller {
 	
 	public function redeem($voucher_code=0)
 	{
-		echo "Done";
+		$voucher_query = $this->db->get_where('session', array('voucher_code', $voucher_code));
+		$voucher = $voucher_query->row_array();
+		if(empty($voucher))
+		{
+			echo "Kode voucher tidak di temukan!";
+			return;
+		}
+		
+		if($voucher['session_status'] != 1)
+		{
+			echo "Tidak berhasil!";
+		}
+		else
+		{
+			$this->db->where('voucher_code', $voucher_code);
+			$this->db->update('session', array('session_status' => 2));
+			echo "Done";
+		}
 	}
 	
 	public function check_voucher($voucher_code=0)
 	{
-		echo "Valid";
+		$voucher_query = $this->db->get_where('session', array('voucher_code', $voucher_code));
+		$voucher = $voucher_query->row_array();
+		if(empty($voucher))
+		{
+			echo "Kode voucher tidak di temukan!";
+			return;
+		}
+		
+		if($voucher['session_status'] == 1)
+		{
+			echo "Valid";
+		}
+		else if($voucher['session_status'] == 2)
+		{
+			echo "Sudah di redeem!";
+		}
+		else if($voucher['session_status'] == 0)
+		{
+			echo "Belum menyelesaikan survei!";
+		}
 	}
 	
 	public function login()
