@@ -128,10 +128,23 @@
 	elseif(isset($finish_page))
 	{
     ?>
-		<div style="position:relative;padding-top:30px;height:80px;width:100%;background-color:#FFFFFF">
-			<div style="position:absolute;margin-left:153px;float:left;width:240px"><div id="banner_container" style="position:relative;left:-33px;" ><img id="survey_banner" src="<?php echo base_url(); ?>/files/img/<?php echo isset($survey['survey_image']) ? $survey['survey_image'] : 'tenten-banner.png'; ?>"  /></div></div>
-			<div style="float:left;font-family:'Arial',Georgia,Serif;font-size:18px;padding-top:25px;padding-left:240px;font-weight:bold;"><?php echo (isset($survey['survey_name']))? $survey['survey_name'] : ''; ?></div>
-		</div>
+		<div id="header">
+      <div style="position:absolute;margin-left:153px;float:left;width:240px">
+        <div id="banner_container">
+        <?php 
+          if(isset($survey['survey_image']) && !empty($survey['survey_image']))
+          {
+        ?>
+          <img id="survey_banner" src="<?php echo base_url(); ?>/files/img/<?php echo $survey['survey_image']; ?>"  />
+        <?php
+          }
+        ?>
+        </div>
+      </div>
+      <div id="survey_title_container">
+        <?php echo (isset($survey['survey_name']))? $survey['survey_name'] : ''; ?>
+      </div>
+    </div>
 		<?php
 		//echo '<img src="' . base_url() . '/files/img/starbucks01-finish-crop.jpg" />';
     $survey_bonus = (isset($survey['survey_bonus'])) ? $survey['survey_bonus'] : '';
@@ -160,6 +173,14 @@
     echo str_replace('%BRAND%', $survey['survey_brand'], $finish_text);
 		?>
 			<script>
+        var banner = new Image();
+        banner.src = $("#survey_banner").attr("src");
+        
+        banner.onload = function () {
+          var newleft = -banner.width/2;
+          $("#banner_container")[0].style.left = newleft+"px";
+          console.log($("#banner_container")[0].style.left);
+        }
 				$('#input_btn').click(function () { 
 					
 					$('form').submit();
