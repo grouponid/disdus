@@ -4,7 +4,6 @@ input[type="checkbox"] {
 
 input[type="checkbox"] + label {
     font-family:Arial, sans-serif;
-    font-size:15px;
 }
 
 input[type="checkbox"] + label span {
@@ -27,7 +26,6 @@ input[type="radio"] {
 
 input[type="radio"] + label {
     font-family:Arial, sans-serif;
-    font-size:15px;
 }
 
 input[type="radio"] + label span {

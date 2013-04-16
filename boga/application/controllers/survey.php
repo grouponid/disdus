@@ -437,12 +437,15 @@ class Survey extends CI_Controller {
 					// if parameter skip exists then skip this question
 					if(isset($response["skip"]))
           {
-            if(in_array($question['question_id'], $response["skip"]))
+            foreach($response["skip"] as $question_id => $questions_skipped)
             {
-              continue;
+              if(in_array($question['question_id'], $questions_skipped))
+              {
+                continue 2;
+              }
             }
           }
-					
+          
 					// if goto condition exists then add skip parameter
 					if(!empty($question['question_goto']))
 					{
@@ -468,7 +471,7 @@ class Survey extends CI_Controller {
 							{
 								foreach($choices as $choice)
 								{
-									$response['skip'] = array_merge((array)$response['skip'], (array) $goto[$choice]['skip']);
+                  $response['skip'][$question['question_id']] = $goto[$choice]['skip'];
 								}
 							}
 						}
@@ -482,21 +485,14 @@ class Survey extends CI_Controller {
 							}
 							if($add_new)
 							{
-								$response['skip'] = array_merge((array)$response['skip'], (array) $goto[$choice]['skip']);
+								$response['skip'][$question['question_id']] = $goto[$choice]['skip'];
 							}
 						}
-						
+            
 						// if no addition
-						if(!$add_new && !empty($response['skip']))
+						if(!$add_new && !empty($response['skip'][$question['question_id']]))
 						{
-							foreach($goto as $choice => $skipped)
-							{
-								foreach($skipped as $idx => $question_id)
-								{
-									$idx = array_search($question_id, $choices);
-									$response['skip'] = array_splice($response['skip'], $idx, 1);
-								}
-							}
+              unset($response['skip'][$question['question_id']]);
 						}
 					} // end if goto condition exists then add skip parameter
 					
@@ -557,9 +553,12 @@ class Survey extends CI_Controller {
 				// if parameter skip exists then skip this question
 				if(isset($response["skip"]))
 				{
-          if(in_array($question['question_id'], $response["skip"]))
+          foreach($response["skip"] as $question_id => $questions_skipped)
           {
-            continue;
+            if(in_array($question['question_id'], $questions_skipped))
+            {
+              continue 2;
+            }
           }
         }
 				
@@ -587,7 +586,7 @@ class Survey extends CI_Controller {
             {
               foreach($choices as $choice)
               {
-                $response['skip'] = array_unique(array_merge((array) $response['skip'], (array) $goto[$choice]['skip']));
+								$response['skip'][$question['question_id']] = $goto[$choice]['skip'];
               }
             }
           }
@@ -601,21 +600,14 @@ class Survey extends CI_Controller {
             }
             if($add_new)
             {
-              $response['skip'] = array_unique(array_merge((array) $response['skip'], (array) $goto[$choice]['skip']));
+              $response['skip'][$question['question_id']] = $goto[$choice]['skip'];
             }
           }
           
-          // if no addition
-          if(!$add_new && !empty($response['skip']))
+          // if no addition then delete 
+          if(!$add_new && !empty($response['skip'][$question['question_id']]))
           {
-            foreach($goto as $choice => $skipped)
-            {
-              foreach($skipped as $idx => $question_id)
-              {
-                $idx = array_search($question_id, $choices);
-                $response['skip'] = array_splice($response['skip'], $idx, 1);
-              }
-            }
+            unset($response['skip'][$question['question_id']]);
           }
         } // end if goto condition exists then add skip parameter
         
@@ -631,20 +623,13 @@ class Survey extends CI_Controller {
 			}
       
 			$user_code = $response['user_code'];
-			unset($response['user_code']);
+      
       if(empty($user_code))
       {
         redirect('survey/take_survey/' . $survey_code . "?err=no_user");
       }
 			
 			// generate voucher code here
-      $resto_code = array(
-        '1' => 'PL',
-        '2' => 'TT',
-        '3' => 'PD',
-        '4' => 'PI',
-        '5' => 'MW',
-      );
       
       $idx = 0;
       $response_add = FALSE;
@@ -653,7 +638,7 @@ class Survey extends CI_Controller {
       while($idx < 3)
       {
         $characters = str_split('ABCDEFGHIJKLMNOPQRSTUVXWYZ1234567890');
-        $voucher_code = $resto_code[$survey['survey_id']];
+        $voucher_code = $survey['prefix_voucher'];
         $rand_index = array_rand($characters, 6);
         foreach($rand_index as $idx)
         {
@@ -683,6 +668,7 @@ class Survey extends CI_Controller {
         $this->db->where('user_code', $user_code);
         $response_query = $this->db->get();
         $response_exists = $response_query->row_array();
+        unset($response['user_code']);
         
         // if empty then insert
         if(empty($response_exists))
@@ -719,7 +705,7 @@ class Survey extends CI_Controller {
         delete_cookie($survey_code);
       }
 			
-			if($response_add && $session_update)
+			if($response_add && $session_update && $survey_update)
 			{
         redirect('survey/take_survey/' . $survey_code . "/" . $input['next']  . '?voucher_code=' . $voucher_code);
 			}
@@ -733,5 +719,5 @@ class Survey extends CI_Controller {
 	}
 }
 
-/* End of file welcome.php */
-/* Location: ./application/controllers/welcome.php */
+/* End of file survey.php */
+/* Location: ./application/controllers/survey.php */

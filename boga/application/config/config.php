@@ -14,7 +14,7 @@
 | path to your installation.
 |
 */
-$config['base_url']	= 'http://localhost/Disdus/boga/';
+$config['base_url']	= 'http://localhost/disdus/boga/';
 
 /*
 |--------------------------------------------------------------------------

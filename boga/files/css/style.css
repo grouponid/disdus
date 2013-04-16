@@ -27,7 +27,6 @@
 #survey_title_container{
 	float:left;
 	font-family:'Arial',Georgia,Serif;
-	font-size:20px;
 	padding-top:25px;
 	padding-left:240px;
 	font-weight:bold;
@@ -46,5 +45,4 @@
 	margin:10px 0px 10px;
 	font-weight:bold;
   font-family:'Arial',Georgia,Serif;
-	font-size:18px;
 }
