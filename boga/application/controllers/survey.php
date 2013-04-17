@@ -32,6 +32,7 @@ class Survey extends CI_Controller {
 			'logout' => 1,
 			'do_logout' => 1,
 			'take_survey' => 1,
+			'close_survey' => 1,
 			'submit_page' => 1,
 			'redeem' => 1,
 			'check_voucher' => 1,
@@ -360,7 +361,7 @@ class Survey extends CI_Controller {
 			// success verify
 			if($session_exists)
 			{
-				$session_id = $this->session->userdata('session_id');
+				$session_id = md5($post['user_code']); //$this->session->userdata('session_id');
 				
 				$cookie = array(
 					'name'   => $survey_code,
@@ -789,8 +790,11 @@ class Survey extends CI_Controller {
         $idx++;
       }
       
+      $transaction_status = FALSE;
 			if($is_session_avail)
       {
+        $this->db->trans_start();
+        
         // check response is exists
         $this->db->select('response_id');
         $this->db->from('survey_response');
@@ -830,23 +834,35 @@ class Survey extends CI_Controller {
         $this->db->where('survey_id', $survey['survey_id']);
         $this->db->set('correspondence', '(correspondence + 1)', FALSE);
         $survey_update	= $this->db->update('survey');
+        
+        $this->db->trans_complete();
+        
+        $transaction_status = $this->db->trans_status();
+        if ($transaction_status === FALSE)
+        {
+          echo "Error: inserting DB";exit;
+        }
       }
 			
-			if($response_add && $session_update && $survey_update)
+			if($transaction_status)
 			{
         // delete cookies
         delete_cookie($survey_code);
         
+        // delete cached response
+        unlink($response_file);
+        
         redirect('survey/take_survey/' . $survey_code . "/" . $input['next']  . '?voucher_code=' . $voucher_code);
 			}
-			else
-      {
-				echo "Error: inserting DB";exit;
-      }
+      
+      redirect('survey/take_survey/' . $survey_code . "?err");
 		}
-		
-		
 	}
+  
+  public function close_survey()
+  {
+    echo "<script type='text/javascript'>window.close();</script>";
+  }
 }
 
 /* End of file survey.php */

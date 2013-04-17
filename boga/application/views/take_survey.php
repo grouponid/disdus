@@ -171,6 +171,13 @@
     </p>';
     echo str_replace('%BRAND%', $survey['survey_brand'], $finish_text);
 		?>
+      </div>
+      <div style="clear:both;height:100px;"></div>
+      <!--<div style="margin-bottom: 20px;padding:20px 20px 0px 20px;width:915px;height:25px">
+        <div style="float:right;">
+          <input type="button" onclick="window.open('', '_self', ''); window.close();" style="cursor:pointer;font:bold 12px 'Arial',Georgia,Serif; border:0px" value="Close" />
+        </div>
+      </div>-->
 			<script>
         var banner = new Image();
         banner.src = $("#survey_banner").attr("src");
@@ -185,11 +192,6 @@
 					$('form').submit();
 				});
 			</script>
-      <div style="margin-bottom: 20px;padding:20px 20px 0px 20px;width:915px;height:25px">
-        <div style="float:right;">
-          <a href="<?php echo site_url('survey/take_survey/' . (isset($survey['survey_code'])) ? $survey['survey_code'] : ''); ?>" style="font:bold 12px 'Arial',Georgia,Serif; color:#000000; text-decoration:none">Cancel</a>
-        </div>
-      </div>
 		<?php
 	}
   /////////////////////////////////////////
@@ -346,8 +348,7 @@
 		{
 			echo "<div style='color:#00471c;height:auto;margin-bottom:30px'>" . $survey_page['page_instructions'] . "</div>";
 		}
-	?>
-	<?php 
+    
 		foreach($questions as $key => $question)
 		{
 			$name = "question_" . $question['question_id'];
@@ -473,7 +474,7 @@
 <?php		
 	}
 ?>
-</div>
-</div>
-</body>
+      </div>
+    </div>
+  </body>
 </html>
