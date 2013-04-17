@@ -146,7 +146,6 @@
       </div>
     </div>
 		<?php
-		//echo '<img src="' . base_url() . '/files/img/starbucks01-finish-crop.jpg" />';
     $survey_bonus = (isset($survey['survey_bonus'])) ? $survey['survey_bonus'] : '';
     $voucher_code = (isset($voucher_code)) ? $voucher_code : '';
     
@@ -186,6 +185,11 @@
 					$('form').submit();
 				});
 			</script>
+      <div style="margin-bottom: 20px;padding:20px 20px 0px 20px;width:915px;height:25px">
+        <div style="float:right;">
+          <a href="<?php echo site_url('survey/take_survey/' . (isset($survey['survey_code'])) ? $survey['survey_code'] : ''); ?>" style="font:bold 12px 'Arial',Georgia,Serif; color:#000000; text-decoration:none">Cancel</a>
+        </div>
+      </div>
 		<?php
 	}
   /////////////////////////////////////////
@@ -296,19 +300,45 @@
 	<div style="float:right;margin-right:20px;margin-top:30px;font-size:12px;font-weight:bold;">
 		<div style="text-align:left;width:200px">Garis Kemajuan Survei<br /><div id="survey_progress" style="height:15px"></div></div>
 	</div>
-	
-	<div style="clear:both;height:60px;position:relative">
-		<?php 
-			if(isset($err))
-			{
-		?>
-		<div style="position:absolute;margin:15px 20px 10px 20px;border: 1px solid red;border-radius:5px;width:910px;height:25px;background-color:#FAAFAF; ">
-			<div style="margin-top:5px;margin-left:10px;color:#FF1F1F;font: bold 12px Arial;">Please fill in all question</div>
-		</div>
-		<?php 
-			}
-		?>
-	</div>
+	<?php 
+    if(!isset($err) && !isset($error_msg))
+    {
+      ?>
+      <div style="clear:both;height:60px;position:relative">
+      </div>
+      <?php
+    }
+    else
+    {
+      ?>
+      <div style="clear:both;height:30px;position:relative">
+      </div>
+      <?php
+      if(isset($err))
+      {
+        ?>
+        <div style="margin:15px 20px 20px 20px;border: 1px solid red;border-radius:5px;width:910px;height:25px;background-color:#FAAFAF; ">
+          <div style="margin-top:5px;margin-left:10px;color:#FF1F1F;font: bold 12px Arial;">Please fill in all question</div>
+        </div>
+        <?php 
+      }
+      if(isset($error_msg))
+      {
+        foreach($error_msg as $msg)
+        {
+          ?>
+          <div style="margin:15px 20px 20px 20px;border: 1px solid red;border-radius:5px;width:910px;height:25px;background-color:#FAAFAF; ">
+            <div style="margin-top:5px;margin-left:10px;color:#FF1F1F;font: bold 12px Arial;"><?php echo $msg; ?></div>
+          </div>
+          <?php
+        }
+      }
+      ?>
+      <div style="clear:both;height:10px;position:relative">
+      </div>
+      <?php
+    }
+  ?>
 	<?php echo form_open('survey/submit_page/' . $survey['survey_code'] . '/' . $current_page); ?>
 	<div style="float:left;width:910px;margin-left:20px;height:auto;min-height:400px;font-family:'Arial',Georgia,Serif;padding-right:5px;font-size:12px">
 	<?php 

@@ -271,6 +271,7 @@ class Survey extends CI_Controller {
       
       $this->db->from('session');
 			$this->db->where('voucher_code', $voucher_code);
+			$this->db->where('survey_id', $survey['survey_id']);
 			$voucher_query = $this->db->get();
 			$voucher = $voucher_query->row_array();
       
@@ -289,7 +290,12 @@ class Survey extends CI_Controller {
 		{
 			$content['err'] = TRUE;
 		}
-		
+    
+		if(isset($this->t['error_msg']))
+		{
+			$content['error_msg'] = $this->t['error_msg'];
+		}
+    
 		// decide template used
 		$template = 'take_survey';
 		
@@ -423,7 +429,7 @@ class Survey extends CI_Controller {
 				$response = array_merge((array) $cached_response, (array) $post);
         
 				// get all question on the page
-				$this->db->select('question_id, question_required, question_goto');
+				$this->db->select('question_id, question_required, question_goto, question_validation, question_name');
 				$this->db->from('question');
 				$this->db->join('survey_page', 'survey_page.page_id = question.page_id');
 				$this->db->where(array('question.survey_id' => $survey['survey_id'], 'page_num' => $page));
@@ -431,9 +437,16 @@ class Survey extends CI_Controller {
 				$questions_query = $this->db->get();
 				$questions = $questions_query->result_array();
 				
+        $error_msg = array();
 				// go through checking all question
 				foreach($questions as $idx => $question)
 				{
+          $_user_response = $response["question_" . $question['question_id']];
+          if(is_string($_user_response))
+          {
+            $_user_response = trim($_user_response);
+          }
+          
 					// if parameter skip exists then skip this question
 					if(isset($response["skip"]))
           {
@@ -500,20 +513,73 @@ class Survey extends CI_Controller {
 					if($question['question_required'] == 1)
 					{
 						// if posted response empty
-						if(!isset($post["question_" . $question['question_id']]) || empty($post["question_" . $question['question_id']]))
+						if(!isset($post["question_" . $question['question_id']]) || empty($_user_response))
 						{
 							$this->t['err'] = TRUE;
 							echo $this->render_survey_page($survey_code, $page);
 							exit;
 						}
 					}
+          
+          if(isset($question['question_validation']) && !empty($question['question_validation']))
+          {
+            $rules = json_decode($question['question_validation'], TRUE);
+            foreach($rules as $rule)
+            {
+              if($rule == "valid_email")
+              {
+                if(!valid_email($_user_response))
+                {
+                  $error_msg[] = $question['question_name'] . ' dimasukkan tidak sah!';
+                }
+              }
+              elseif($rule == "numeric")
+              {
+                if(!is_numeric($_user_response))
+                {
+                  $error_msg[] = $question['question_name'] . ' hanya menerima angka (0-9)';
+                }
+              }
+              elseif(is_numeric(strrpos($rule, "min_length")))
+              {
+                list($text, $threshold) = explode(":", $rule);
+                if(strlen($_user_response) < $threshold)
+                {
+                  $error_msg[] = 'Minimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+                }
+              }
+              elseif(is_numeric(strrpos($rule, "max_length")))
+              {
+                list($text, $threshold) = explode(":", $rule);
+                if(strlen($_user_response) > $threshold)
+                {
+                  $error_msg[] = 'Maksimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+                }
+              }
+            } // go through every rule
+            
+          } // end if validation not empty
+          
 				} // end foreach question 
+        
+        if(!empty($error_msg))
+        {
+          $this->t['error_msg'] = $error_msg;
+          echo $this->render_survey_page($survey_code, $page);
+          exit;
+        }
+        
 				write_file($session_path . "/" . $session_id, json_encode($response));
 			}
 			
 			redirect('survey/take_survey/' . $survey_code . "/" . $input['next']  . '?prev=' . $page);
 		}
-		// goto previous
+    
+    //////////////////////////////////////////////
+    //                                          //
+    // FUNCTION TO REDIRECT TO PREVIOUS PAGE    //
+    //                                          //
+    //////////////////////////////////////////////
 		elseif(is_numeric(strrpos($input['goto'], '<'))) 
 		{
 			if(is_numeric($page) && $page > 0)
@@ -526,20 +592,30 @@ class Survey extends CI_Controller {
 			}
 			redirect('survey/take_survey/' . $survey_code . "/" . $input['previous'] . '?next=' . $page);
 		}
-		// goto finish
+    
+    //////////////////////////////////////////////
+    //                                          //
+    // FUNCTION TO REDIRECT TO FINISH PAGE      //
+    //                                          //
+    //////////////////////////////////////////////
 		elseif(in_array($input['goto'], $finish_btn))
 		{
 			$session_id = get_cookie($survey_code);
-			
-			if(empty($session_id) || !file_exists($session_path . "/" . $session_id))
+			$response_file = $session_path . "/" . $session_id;
+			if(empty($session_id) || !file_exists($response_file))
 			{
 				redirect('survey/take_survey/' . $survey_code . "?err=session");
 			}
 			
-			$response = array_merge((array) json_decode(read_file($session_path . "/" . $session_id), true), (array)$post);
-			
+      $cached_response = array();
+      if(file_exists($response_file))
+      {
+        $cached_response = json_decode(read_file($response_file), TRUE);	
+      }
+      $response = array_merge((array) $cached_response, (array) $post);
+      
 			// get all question of survey
-			$this->db->select('question_id, question_required, question_goto, page_num');
+			$this->db->select('question_id, question_required, question_goto, question_validation, question_name, page_num');
 			$this->db->from('question');
 			$this->db->join('survey_page', 'survey_page.page_id = question.page_id');
 			$this->db->where('question.survey_id', $survey['survey_id']);
@@ -550,7 +626,13 @@ class Survey extends CI_Controller {
 			// go through checking all question
 			foreach($questions as $idx => $question)
 			{
-				// if parameter skip exists then skip this question
+        $_user_response = $response["question_" . $question['question_id']];
+        if(is_string($_user_response))
+        {
+          $_user_response = trim($_user_response);
+        }
+        
+        // if parameter skip exists then skip this question
 				if(isset($response["skip"]))
 				{
           foreach($response["skip"] as $question_id => $questions_skipped)
@@ -615,12 +697,59 @@ class Survey extends CI_Controller {
 				if($question['question_required'] == 1)
 				{
 					// if posted response empty
-					if(!isset($response["question_" . $question['question_id']]) || empty($response["question_" . $question['question_id']]))
+					if(!isset($_user_response) || empty($_user_response))
 					{
 						redirect('survey/take_survey/' . $survey_code . '/' . $question['page_num'] . "?err");
 					}
 				}
-			}
+        
+        if(isset($question['question_validation']) && !empty($question['question_validation']))
+        {
+          $rules = json_decode($question['question_validation'], TRUE);
+          foreach($rules as $rule)
+          {
+            if($rule == "valid_email")
+            {
+              if(!valid_email($_user_response))
+              {
+                $error_msg[] = $question['question_name'] . ' dimasukkan tidak sah!';
+              }
+            }
+            elseif($rule == "numeric")
+            {
+              if(!is_numeric($_user_response))
+              {
+                $error_msg[] = $question['question_name'] . ' hanya menerima angka (0-9)';
+              }
+            }
+            elseif(is_numeric(strrpos($rule, "min_length")))
+            {
+              list($text, $threshold) = explode(":", $rule);
+              if(strlen($_user_response) < $threshold)
+              {
+                $error_msg[] = 'Minimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+              }
+            }
+            elseif(is_numeric(strrpos($rule, "max_length")))
+            {
+              list($text, $threshold) = explode(":", $rule);
+              if(strlen($_user_response) > $threshold)
+              {
+                $error_msg[] = 'Maksimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+              }
+            }
+          } // go through every rule
+          
+        } // end if validation not empty
+        
+      } // end foreach question 
+      
+      if(!empty($error_msg))
+      {
+        $this->t['error_msg'] = $error_msg;
+        echo $this->render_survey_page($survey_code, $page);
+        exit;
+      }
       
 			$user_code = $response['user_code'];
       
@@ -635,7 +764,7 @@ class Survey extends CI_Controller {
       $response_add = FALSE;
       $session_update = FALSE;
       $is_session_avail = FALSE;
-      while($idx < 3)
+      while(!$is_session_avail)
       {
         $characters = str_split('ABCDEFGHIJKLMNOPQRSTUVXWYZ1234567890');
         $voucher_code = $survey['prefix_voucher'];
@@ -696,17 +825,18 @@ class Survey extends CI_Controller {
         
         // update the session
         $this->db->where('session_code', $user_code);
-        $session_update	= $this->db->update('session', array('session_status' => '1', 'voucher_code' => $voucher_code));
+        $session_update	= $this->db->update('session', array('session_status' => '1', 'voucher_code' => $voucher_code, 'survey_id' => $survey['survey_id']));
         
         $this->db->where('survey_id', $survey['survey_id']);
-        $survey_update	= $this->db->update('survey', array('correspondence' => 'correspondence + 1'));
-        
-        // delete cookies
-        delete_cookie($survey_code);
+        $this->db->set('correspondence', '(correspondence + 1)', FALSE);
+        $survey_update	= $this->db->update('survey');
       }
 			
 			if($response_add && $session_update && $survey_update)
 			{
+        // delete cookies
+        delete_cookie($survey_code);
+        
         redirect('survey/take_survey/' . $survey_code . "/" . $input['next']  . '?voucher_code=' . $voucher_code);
 			}
 			else

@@ -45,7 +45,7 @@ $route['tenten']          = 'survey/take_survey/tenten';
 $route['masterwok']       = 'survey/take_survey/masterwok';
 $route['paradisedynasty'] = 'survey/take_survey/paradisedynasty';
 $route['paradiseinn']     = 'survey/take_survey/paradiseinn';
-$route['paradiseinn']     = 'survey/take_survey/bakerzin';
+$route['bakerzin']        = 'survey/take_survey/bakerzin';
 $route['404_override'] = '';
 
 
