@@ -376,6 +376,10 @@ class Survey extends CI_Controller {
 				
 				$response = array();
 				$response['user_code'] = $post['user_code'];
+        if(file_exists($session_path . "/" . $session_id))
+        {
+          unlink($session_path . "/" . $session_id);
+        }
 				write_file($session_path . "/" . $session_id, json_encode($response));
 			}
 			else
@@ -623,7 +627,8 @@ class Survey extends CI_Controller {
 			$this->db->order_by('page_num', 'ASC');
 			$questions_query = $this->db->get();
 			$questions = $questions_query->result_array();
-			
+      
+			$error_page = 0;
 			// go through checking all question
 			foreach($questions as $idx => $question)
 			{
@@ -698,9 +703,9 @@ class Survey extends CI_Controller {
 				if($question['question_required'] == 1)
 				{
 					// if posted response empty
-					if(!isset($_user_response) || empty($_user_response))
+					if(empty($_user_response))
 					{
-						redirect('survey/take_survey/' . $survey_code . '/' . $question['page_num'] . "?err");
+						redirect('survey/take_survey/' . $survey_code . '/' . $question['page_num'] . "?err=" . $question['question_id'] . ":" . $_user_response);
 					}
 				}
         
@@ -714,6 +719,7 @@ class Survey extends CI_Controller {
               if(!valid_email($_user_response))
               {
                 $error_msg[] = $question['question_name'] . ' dimasukkan tidak sah!';
+                $error_page = $question['page_num'];
               }
             }
             elseif($rule == "numeric")
@@ -721,6 +727,7 @@ class Survey extends CI_Controller {
               if(!is_numeric($_user_response))
               {
                 $error_msg[] = $question['question_name'] . ' hanya menerima angka (0-9)';
+                $error_page = $question['page_num'];
               }
             }
             elseif(is_numeric(strrpos($rule, "min_length")))
@@ -729,6 +736,7 @@ class Survey extends CI_Controller {
               if(strlen($_user_response) < $threshold)
               {
                 $error_msg[] = 'Minimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+                $error_page = $question['page_num'];
               }
             }
             elseif(is_numeric(strrpos($rule, "max_length")))
@@ -737,6 +745,7 @@ class Survey extends CI_Controller {
               if(strlen($_user_response) > $threshold)
               {
                 $error_msg[] = 'Maksimum panjang ' . $question['question_name'] . ' adalah ' . $threshold;
+                $error_page = $question['page_num'];
               }
             }
           } // go through every rule
@@ -745,10 +754,10 @@ class Survey extends CI_Controller {
         
       } // end foreach question 
       
-      if(!empty($error_msg))
+      if(!empty($error_msg) && !empty($error_page))
       {
         $this->t['error_msg'] = $error_msg;
-        echo $this->render_survey_page($survey_code, $page);
+        echo $this->render_survey_page($survey_code, $error_page);
         exit;
       }
       

@@ -99,6 +99,7 @@
 		//echo '<div id="input_btn" style="text-align:center;"><div style="font: bold 12px Arial;margin-top:8px">Masukkan</div></div>';
 		echo form_close();
 		?> 
+    <div style="clear:both;height:120px;"></div>
 		<script>
 			$(function () {
 				
@@ -474,6 +475,9 @@
 <?php		
 	}
 ?>
+      <div style="background-color:#FFFFFF">
+        <img src="<?php echo base_url(); ?>/files/img/allbrand-footer.jpg" />
+      </div>
       </div>
     </div>
   </body>
