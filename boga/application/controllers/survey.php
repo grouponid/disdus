@@ -37,6 +37,9 @@ class Survey extends CI_Controller {
 			'redeem' => 1,
 			'check_voucher' => 1,
 			'enter_code' => 1,
+			'set_user_code_printed' => 1,
+			'get_user_code' => 1,
+			'get_survey_code' => 1,
 		);
 		
 		if(empty($this->t['logged_user']) && !array_key_exists($function, $without_login))
@@ -87,7 +90,117 @@ class Survey extends CI_Controller {
 			echo "Done";
 		}
 	}
-	
+  
+	public function get_user_code()
+  {
+    $transaction_status = FALSE;
+    $session = array();
+    
+    $this->db->trans_start();
+    
+    $this->db->select('session_id, session_code');
+    $this->db->order_by('session_id', 'ASC');
+    $user_query = $this->db->get_where('session', array('session_status' => 'U'), 1);
+		$session = $user_query->row_array();
+    
+    if($session)
+    {
+      $this->db->where('session_id', $session['session_id']);
+      $session_data = array(
+        'session_status' => 'B',
+        'update_date' =>  date('Y-m-d H:i:s'),
+      );
+      $session_update	= $this->db->update('session', $session_data);
+    }
+    
+    $this->db->trans_complete();
+    
+    $transaction_status = $this->db->trans_status();
+    
+    if ($transaction_status !== FALSE)
+    {
+      echo (!empty($session['session_code'])) ? $session['session_code'] : 0;
+      exit;
+    }
+    
+    echo 0;
+  }
+  
+  public function get_survey_code($survey_code=0)
+  {
+    $transaction_status = FALSE;
+    $session = array();
+    $survey = array();
+    
+    $this->db->trans_start();
+    
+    $this->db->select('session_id, session_code');
+    $this->db->order_by('session_id', 'ASC');
+    $user_query = $this->db->get_where('session', array('session_status' => 'U'), 1);
+		$session = $user_query->row_array();
+    
+    $this->db->select('survey_id, survey_code, survey_brand');
+    $survey_query = $this->db->get_where('survey', array('survey_code' => $survey_code), 1);
+		$survey = $survey_query->row_array();
+    
+    if(!empty($session) && !empty($survey))
+    {
+      $this->db->where('session_id', $session['session_id']);
+      $session_data = array(
+        'session_status' => 'B',
+        'survey_id' => $survey['survey_id'],
+        'update_date' =>  date('Y-m-d H:i:s'),
+      );
+      $session_update	= $this->db->update('session', $session_data);
+    }
+    
+    $this->db->trans_complete();
+    
+    $transaction_status = $this->db->trans_status();
+    
+    if ($transaction_status === FALSE || empty($session) || empty($survey))
+    {
+      echo 0;
+      exit;
+    }
+    
+    $content = array();
+    $content['survey_brand'] =  $survey['survey_brand'];
+    $content['user_code'] =  $session['session_code'];
+    $content['survey_code'] =  $survey['survey_code'];
+    $this->load->view('invoice_survey', $content);
+  }
+  
+  public function set_user_code_printed($session_code=0)
+  {
+    if(!$session_code)
+    {
+      return FALSE;
+    }
+    $session_update = FALSE;
+    // update user_code
+    {
+      $where = array(
+        'session_code' => $session_code,
+        'session_status' => 'B',
+      );
+      $this->db->where($where);
+      $session_exists_query = $this->db->get('session');
+      $session_exists = $session_exists_query->row_array();
+      
+      if($session_exists)
+      {
+        $this->db->where($where);
+        $session_data = array(
+          'session_status' => '0',
+          'update_date' =>  date('Y-m-d H:i:s'),
+        );
+        $session_update	= $this->db->update('session', $session_data);
+      }
+    }
+    echo ($session_update !== FALSE) ? 1 : 0;
+  }
+  
 	public function check_voucher($voucher_code=0)
 	{
 		$voucher_query = $this->db->get_where('session', array('voucher_code' => $voucher_code));
@@ -164,7 +277,7 @@ class Survey extends CI_Controller {
 		$this->load->driver('cache');
 		$this->load->helper('cookie');
 		
-		if(!empty($page) && (get_cookie($survey_code) === FALSE) )
+		if(!empty($page) && (get_cookie($survey_code . "_survey") === FALSE) )
 		{
       if($page != 'finish')
       {
@@ -256,7 +369,7 @@ class Survey extends CI_Controller {
 			$content['survey_progress'] 	= ($num_survey_page) ? $page * 100 / $num_survey_page : 0;
 			
 			$session_path 					= $this->config->item('session_path');
-			$session_id 					= get_cookie($survey_code);
+			$session_id 					= get_cookie($survey_code . "_survey");
 			
 			$this->load->helper('file');
 			
@@ -364,7 +477,7 @@ class Survey extends CI_Controller {
 				$session_id = md5($post['user_code']); //$this->session->userdata('session_id');
 				
 				$cookie = array(
-					'name'   => $survey_code,
+					'name'   => $survey_code . "_survey",
 					'value'  => $session_id,
 					'expire' => '21600',
 				);
@@ -399,7 +512,7 @@ class Survey extends CI_Controller {
 				}
 			}
 
-			$session_id = get_cookie($survey_code);
+			$session_id = get_cookie($survey_code . "_survey");
 		}
     
     // if next is finish and go to next
@@ -429,7 +542,10 @@ class Survey extends CI_Controller {
 				$cached_response = array();
 				if(file_exists($session_path . "/" . $session_id))
 				{
-					$cached_response = json_decode(read_file($session_path . "/" . $session_id), TRUE);	
+					if(!$cached_response = json_decode(read_file($session_path . "/" . $session_id), TRUE))	
+          {
+            redirect('survey/take_survey/' . $survey_code . "/1" );
+          }
 				}
 				$response = array_merge((array) $cached_response, (array) $post);
         
@@ -518,7 +634,7 @@ class Survey extends CI_Controller {
 					if($question['question_required'] == 1)
 					{
 						// if posted response empty
-						if(!isset($post["question_" . $question['question_id']]) || empty($_user_response))
+						if(empty($_user_response))
 						{
 							$this->t['err'] = TRUE;
 							echo $this->render_survey_page($survey_code, $page);
@@ -573,8 +689,10 @@ class Survey extends CI_Controller {
           echo $this->render_survey_page($survey_code, $page);
           exit;
         }
-        
-				write_file($session_path . "/" . $session_id, json_encode($response));
+				if(!write_file($session_path . "/" . $session_id, json_encode($response)))
+        {
+          redirect('survey/take_survey/' . $survey_code . "/" . $page );
+        }
 			}
 			
 			redirect('survey/take_survey/' . $survey_code . "/" . $input['next']  . '?prev=' . $page);
@@ -591,9 +709,15 @@ class Survey extends CI_Controller {
 			{	
 				if(file_exists($session_path . "/" . $session_id))
 				{
-					$response = array_merge((array)$post, (array) json_decode(read_file($session_path . "/" . $session_id), TRUE));
+					if(!$response = array_merge((array)$post, (array) json_decode(read_file($session_path . "/" . $session_id), TRUE)))
+          {
+            redirect('survey/take_survey/' . $survey_code . "/1" );
+          }
 				}
-				write_file($session_path . "/" . $session_id, json_encode($response));
+				if(!write_file($session_path . "/" . $session_id, json_encode($response)))
+        {
+          redirect('survey/take_survey/' . $survey_code . "/" . $page );
+        }
 			}
 			redirect('survey/take_survey/' . $survey_code . "/" . $input['previous'] . '?next=' . $page);
 		}
@@ -605,7 +729,7 @@ class Survey extends CI_Controller {
     //////////////////////////////////////////////
 		elseif(in_array($input['goto'], $finish_btn))
 		{
-			$session_id = get_cookie($survey_code);
+			$session_id = get_cookie($survey_code . "_survey");
 			$response_file = $session_path . "/" . $session_id;
 			if(empty($session_id) || !file_exists($response_file))
 			{
@@ -615,7 +739,10 @@ class Survey extends CI_Controller {
       $cached_response = array();
       if(file_exists($response_file))
       {
-        $cached_response = json_decode(read_file($response_file), TRUE);	
+        if(!$cached_response = json_decode(read_file($response_file), TRUE))
+        {
+          redirect('survey/take_survey/' . $survey_code . "/1");
+        }	
       }
       $response = array_merge((array) $cached_response, (array) $post);
       
@@ -667,7 +794,6 @@ class Survey extends CI_Controller {
                 $add_new = TRUE;
                 $choices[] = $choice;
               }
-              
             }
             
             if($add_new)
